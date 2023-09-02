@@ -5,10 +5,10 @@ class RedisClient {
   constructor() {
     this.isReady = false;
     this._redis = createClient();
-    this.isReady = true;
     this._redis.on('error', (error) => {
       console.log(error);
     });
+    this.isReady = true;
   }
 
   async isAlive() {
