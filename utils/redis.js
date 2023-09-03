@@ -15,17 +15,29 @@ class RedisClient {
 
   async get(key) {
     const getKey = promisify(this._redis.get).bind(this._redis);
-    return getKey(key);
+    try {
+      const value = await getKey(key);
+      return value;
+    } catch (error) {
+      return null;
+    }
   }
 
   async set(key, value, duration) {
-    const setKey = promisify(this._redis.set).bind(this._redis);
-    return setKey(key, value, 'EX', duration);
+    const setKey = promisify(this._redis.setex).bind(this._redis);
+    try {
+      setKey(key, duration, value);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async del(key) {
-    const delKey = promisify(this._redis.del).bind(this._redis);
-    return delKey(key);
+    try {
+      this._redis.del(key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
 
