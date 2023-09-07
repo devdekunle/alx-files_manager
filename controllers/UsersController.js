@@ -13,8 +13,9 @@ class UsersController {
       const { password } = jsonData;
 
       if (!email) {
-        res.status(400).send({ error: 'Missing email' });
-      } else if (!password) {
+         res.status(400).send({ error: 'Missing email' });
+         }
+      if (!password) {
         res.status(400).send({ error: 'Missing password' });
       }
       try {
