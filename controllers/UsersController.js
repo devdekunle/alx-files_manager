@@ -6,7 +6,6 @@ const sha1 = require('sha1');
 
 class UsersController {
   static async postNew(req, res) {
-    if (dbClient.isAlive()) {
     // get json data from req.body
       const jsonData = req.body;
       const { email } = jsonData;
@@ -28,11 +27,8 @@ class UsersController {
           res.status(201).send({ email, id: result.insertedId });
         }
       } catch (err) {
-        console.log(err);
-      }
-    } else {
-      console.log('Not connected to mongodb database');
-    }
+        console.log(error)
+        }
   }
 
   static async getMe(req, res) {
