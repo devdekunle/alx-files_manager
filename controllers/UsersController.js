@@ -24,9 +24,8 @@ class UsersController {
           res.status(400).send({ error: 'Already exist' });
         } else {
           const newPasswordHash = sha1(password);
-          const _id = uuidv4();
-          await dbClient.db.collection('users').insertOne({ _id, email, password: newPasswordHash });
-          res.status(201).send({ email, id: _id });
+          const result = await dbClient.db.collection('users').insertOne({ email, password: newPasswordHash });
+          res.status(201).send({ email, id: result.insertedId });
         }
       } catch (err) {
         console.log(err);
