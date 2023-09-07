@@ -13,12 +13,12 @@ class AuthController {
       // get request header
       const header = req.header('Authorization');
       if (!header) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).send({ error: 'Unauthorized' });
       }
       const base64AuthToken = header.split(' ')[1];
 
       if (!base64AuthToken || !isBase64(base64AuthToken)) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).send({ error: 'Unauthorized' });
       }
       const bufferObj = Buffer.from(base64AuthToken, 'base64');
       const userData = bufferObj.toString('utf-8').split(':');

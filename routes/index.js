@@ -7,6 +7,7 @@ import UsersController from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
 
 const express = require('express');
+
 const router = express.Router();
 
 // define routes for middleware
