@@ -6,9 +6,11 @@ import AppController from '../controllers/AppController';
 import UsersController from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
 
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
 
 // define routes for middleware
+router.use(express.json()); // for parsing application/json
 router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
 router.post('/users', UsersController.postNew);

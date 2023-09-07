@@ -13,8 +13,8 @@ class UsersController {
       const { password } = jsonData;
 
       if (!email) {
-         res.status(400).send({ error: 'Missing email' });
-         }
+        res.status(400).send({ error: 'Missing email' });
+      }
       if (!password) {
         res.status(400).send({ error: 'Missing password' });
       }
@@ -39,15 +39,18 @@ class UsersController {
   static async getMe(req, res) {
     try {
       const authToken = req.header('X-Token');
+      if (!authToken) {
+        res.status(401).send({ error: 'Unauthorized' });
+      }
       const userId = await redisClient.get(`auth_${authToken}`);
       const user = await dbClient.db.collection('users').find({ _id: userId }).toArray();
       if (user.length === 0) {
-        res.status(400).send({ error: 'Unauthorized' });
+        res.status(401).send({ error: 'Unauthorized' });
       } else {
         res.status(200).send({ email: user[0].email, id: user[0]._id });
       }
     } catch (err) {
-      console.log(err);
+      res.status(401).send({ error: 'Unauthorized' });
     }
   }
 }
