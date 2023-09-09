@@ -8,9 +8,7 @@ const sha1 = require('sha1');
 class UsersController {
   static async postNew(req, res) {
     // get json data from req.body
-    const jsonData = req.body;
-    const { email } = jsonData;
-    const { password } = jsonData;
+    const { email, password } = req.body;
 
     if (!email) {
       res.status(400).send({ error: 'Missing email' });
