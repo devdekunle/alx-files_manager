@@ -9,7 +9,7 @@ class RedisClient {
     });
   }
 
-  async isAlive() {
+  isAlive() {
     return this._redis.connected;
   }
 

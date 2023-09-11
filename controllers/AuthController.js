@@ -1,5 +1,6 @@
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
+
 const { ObjectId } = require('mongodb');
 
 const isBase64 = require('is-base64');
@@ -46,7 +47,7 @@ class AuthController {
       }
       const userId = await redisClient.get(`auth_${xToken}`);
       if (!userId) {
-        res.status(401).send({ error: "Unauthorized"});
+        res.status(401).send({ error: 'Unauthorized' });
       }
       const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
       if (!user) {
@@ -56,7 +57,7 @@ class AuthController {
         res.status(204).end();
       }
     } catch (err) {
-        console.log(err);
+      console.log(err);
     }
   }
 }
