@@ -23,8 +23,8 @@ export default class FilesController {
         res.status(401).json({ error: 'Unauthorized' });
       }
       const {
-        name, type, data
-        } = req.body;
+        name, type, data,
+      } = req.body;
       let { parentId, isPublic } = req.body;
 
       if (!name) {
