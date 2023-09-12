@@ -90,4 +90,114 @@ export default class FilesController {
       console.log(err);
     }
   }
+
+  static async getShow(req, res) {
+    const fileId = req.params.id;
+    try {
+      // method to retrieve a file document based on its id
+
+      // authenticate user from token
+      const token = req.header('X-Token');
+      if (!token) {
+        res.status(400).json({ error: 'Unauthorized' });
+      }
+      // get userId vis token from redis
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      if (!user) {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+      // retrieve file from database based on userId and id passed in paramaters
+      const file = await dbClient.db.collection('files').findOne({ userId: ObjectId(userId), _id: ObjectId(fileId) });
+      if (!file) {
+        res.status(404).json({ error: 'Not found' });
+      } else {
+        res.status(200).json({
+          id: file._id.toString(),
+          name: file.name,
+          userId,
+          type: file.type,
+          isPublic: file.isPublic,
+          parentId: file.parentId.toString(),
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  static async getIndex(req, res) {
+    // retrieve all files in the db for a specific parentId
+    const token = req.header('X-Token');
+    if (!token) {
+      res.status(400).json({ error: 'Unauthorized' });
+    }
+    try {
+    // get userId vis token from redis
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      if (!user) {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+      // get query parameters
+      const { parentId } = req.query;
+      const { page } = req.query;
+      const perPage = 20;
+      const skipCount = (1 - page) * perPage;
+      if (!parentId || parentId === 0) {
+        await dbClient.db.collection('files').aggregate([
+          {
+            $skip: skipCount,
+          },
+
+          {
+            $limit: perPage,
+          },
+          {
+            $project: {
+              localPath: 0,
+            },
+          },
+        ]).toArray((err, result) => {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          res.status(200).json(result);
+        });
+      } else {
+        await dbClient.db.collection('files').aggregate([
+          {
+            $match: { parentId: ObjectId(parentId) },
+          },
+
+          {
+            $skip: skipCount,
+          },
+          {
+            $limit: perPage,
+          },
+          {
+            $project: {
+              localPath: 0,
+            },
+          },
+        ]).toArray((err, result) => {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          res.status(200).json(result);
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
 }
