@@ -1,6 +1,6 @@
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
-
+const mime = require('mime-types');
 const { ObjectId } = require('mongodb');
 const isbase64 = require('is-base64');
 const fs = require('fs');
@@ -252,6 +252,9 @@ export default class FilesController {
         res.status(404).json({ error: 'Not found' });
       }
       const fileId = req.params.id;
+      if (!fileId) {
+        res.status(400).json({error: "fileId missing in query string"});
+      }
       const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId), userId: user._id });
       if (!file) {
         res.status(404).json({ error: 'Not found' });
@@ -269,5 +272,50 @@ export default class FilesController {
     } catch (err) {
       console.log(err);
     }
+  }
+
+  static async getFile(req, res) {
+    // method to retrieve the contents of a file
+    // get token from header
+    const token = req.header('X-Token');
+    if (!token) {
+        res.status(400).json({error: "Unauthorized"});
+    }
+    try {
+        // get userId from redis
+        const userId = await redisClient.get(`auth_${token}`);
+        if (!userId) {
+            res.status(401).json({error: "Unauthorized"});
+        }
+        // get the fileId from request parameter
+        const fileId = req.params.id;
+        if (!fileId) {
+            res.status(400).json({error: 'File is missing'})
+        }
+        // get the file from the database based on the fileId and userId
+        const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId), userId: ObjectId(userId)})
+        if (!file || file.isPublic === false) {
+            res.status(404).json({error: "Nota found"});
+        }
+        if (file.type === "folder") {
+            res.status(400).json({error: "A folder doesn't have content"})
+        }
+        // check if file is present in disk using the fs module
+        fs.access(file.localPath, fs.constants.F_OK, (err) => {
+            if (err) {
+                res.status(404).json({error: "Not found"})
+            }
+        });
+        // get correct mime type for file
+        const fileMimeType = mime.contentType(file.name)
+        if (fileMimeType) {
+            fs.readFile(file.localPath, (err,fileData) => {
+                if (err) {console.log(err)}
+                res.status(200).json(fileData);
+            });
+         }
+     } catch (err) {
+        console.log(err);
+     }
   }
 }

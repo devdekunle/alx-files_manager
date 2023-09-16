@@ -8,10 +8,11 @@ import AuthController from '../controllers/AuthController';
 import FilesController from '../controllers/FilesController';
 
 const express = require('express');
-
+const cors = require('cors');
 const router = express.Router();
 
 // define routes for middleware
+router.use(cors());
 router.use(express.json()); // for parsing application/json
 router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
@@ -24,4 +25,5 @@ router.get('/files/:id', FilesController.getShow);
 router.get('/files', FilesController.getIndex);
 router.put('/files/:id/publish', FilesController.putPublish);
 router.put('/files/:id/unpublish', FilesController.putUnpublish);
+router.get('/files/:id/data', FilesController.getFile);
 module.exports = router; // export middleware instance
