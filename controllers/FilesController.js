@@ -18,7 +18,7 @@ export default class FilesController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
-      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
       if (!user) {
         res.status(401).json({ error: 'Unauthorized' });
       }
@@ -43,7 +43,7 @@ export default class FilesController {
       if (!parentId) {
         parentId = 0;
       } else {
-        parentId = ObjectId(parentId);
+        parentId = new ObjectId(parentId);
       }
       if (!isPublic) {
         isPublic = false;
@@ -106,12 +106,12 @@ export default class FilesController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
-      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
       if (!user) {
         res.status(401).json({ error: 'Unauthorized' });
       }
       // retrieve file from database based on userId and id passed in paramaters
-      const file = await dbClient.db.collection('files').findOne({ userId: ObjectId(userId), _id: ObjectId(fileId) });
+      const file = await dbClient.db.collection('files').findOne({ userId: new ObjectId(userId), _id: new ObjectId(fileId) });
       if (!file) {
         res.status(404).json({ error: 'Not found' });
       } else {
@@ -141,15 +141,16 @@ export default class FilesController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
-      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
       if (!user) {
         res.status(401).json({ error: 'Unauthorized' });
       }
       // get query parameters
       const { parentId } = req.query;
-      const { page } = req.query;
+      let { page } = req.query;
+      if (!page || page < 1) page = 1;
       const perPage = 20;
-      const skipCount = (1 - page) * perPage;
+      const skipCount = (page - 1) * perPage;
       if (!parentId || parentId === 0) {
         await dbClient.db.collection('files').aggregate([
           {
@@ -174,7 +175,7 @@ export default class FilesController {
       } else {
         await dbClient.db.collection('files').aggregate([
           {
-            $match: { parentId: ObjectId(parentId) },
+            $match: { parentId: new ObjectId(parentId) },
           },
 
           {
@@ -212,12 +213,12 @@ export default class FilesController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
-      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
       if (!user) {
         res.status(404).json({ error: 'Not found' });
       }
       const fileId = req.params.id;
-      const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId), userId: user._id });
+      const file = await dbClient.db.collection('files').findOne({ _id: new ObjectId(fileId), userId: user._id });
       if (!file) {
         res.status(404).json({ error: 'Not found' });
       }
@@ -247,7 +248,7 @@ export default class FilesController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
-      const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
+      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
       if (!user) {
         res.status(404).json({ error: 'Not found' });
       }
@@ -255,7 +256,7 @@ export default class FilesController {
       if (!fileId) {
         res.status(400).json({error: "fileId missing in query string"});
       }
-      const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId), userId: user._id });
+      const file = await dbClient.db.collection('files').findOne({ _id: new ObjectId(fileId), userId: user._id });
       if (!file) {
         res.status(404).json({ error: 'Not found' });
       }
@@ -293,9 +294,9 @@ export default class FilesController {
             res.status(400).json({error: 'File is missing'})
         }
         // get the file from the database based on the fileId and userId
-        const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId), userId: ObjectId(userId)})
+        const file = await dbClient.db.collection('files').findOne({ _id: new ObjectId(fileId), userId: new ObjectId(userId)})
         if (!file || file.isPublic === false) {
-            res.status(404).json({error: "Nota found"});
+            res.status(404).json({error: "Not found"});
         }
         if (file.type === "folder") {
             res.status(400).json({error: "A folder doesn't have content"})
