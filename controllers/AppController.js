@@ -14,4 +14,5 @@ class AppController {
     res.status(200).json({ users: userCount, files: fileCount });
   }
 }
+
 module.exports = AppController;
