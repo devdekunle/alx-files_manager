@@ -5,6 +5,8 @@ const { ObjectId } = require('mongodb');
 const isbase64 = require('is-base64');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const Queue = require('bull')
+const fileQueue = new Queue('thumbnail generation');
 
 export default class FilesController {
   static async postUpload(req, res) {
@@ -18,10 +20,12 @@ export default class FilesController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
+      // get user from database
       const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
       if (!user) {
         res.status(401).json({ error: 'Unauthorized' });
       }
+      // destructure request data
       const {
         name, type, data,
       } = req.body;
@@ -49,6 +53,7 @@ export default class FilesController {
         isPublic = false;
       }
       if (parentId !== 0) {
+        // search for file with parentId if it exists if file ought to have a parentId
         const file = await dbClient.db.collection('files').findOne({ _id: parentId });
         if (!file) {
           res.status(400).json('Parent not found');
@@ -56,6 +61,7 @@ export default class FilesController {
           res.status(400).json('Parent is not a folder');
         }
       }
+      // if file is a folder
       if (type === 'folder') {
         const newFile = await dbClient.db.collection('files').insertOne({
           name, type, parentId, userId: user._id, isPublic,
@@ -63,6 +69,7 @@ export default class FilesController {
         res.status(201).json({
           name, type, userId, isPublic, parentId, id: newFile.insertedId,
         });
+        // create directory and write content to the file
       } else if (type === 'file' || type === 'image') {
         const base64Data = Buffer.from(data, 'base64');
         const fileData = base64Data.toString('utf-8');
@@ -82,6 +89,11 @@ export default class FilesController {
         const newFile = await dbClient.db.collection('files').insertOne({
           name, type, parentId, isPublic, userId: user._id, localPath: fileLocalPath,
         });
+        if (type === 'image') {
+            // add a new job to the thumnail generation queue
+            await fileQueue.add({ userId: user._id, fileId: newFile.insertedId });
+        }
+
         res.status(201).json({
           id: newFile.insertedId, userId, name, type, isPublic, parentId,
         });
@@ -152,7 +164,7 @@ export default class FilesController {
       const perPage = 20;
       const skipCount = (page - 1) * perPage;
       if (!parentId || parentId === 0) {
-        await dbClient.db.collection('files').aggregate([
+        const files = await dbClient.db.collection('files').aggregate([
           {
             $skip: skipCount,
           },
@@ -165,15 +177,10 @@ export default class FilesController {
               localPath: 0,
             },
           },
-        ]).toArray((err, result) => {
-          if (err) {
-            console.log(err);
-            return;
-          }
-          res.status(200).json(result);
-        });
+        ]).toArray()
+        res.status(200).json(files);
       } else {
-        await dbClient.db.collection('files').aggregate([
+        const files = await dbClient.db.collection('files').aggregate([
           {
             $match: { parentId: new ObjectId(parentId) },
           },
@@ -189,13 +196,8 @@ export default class FilesController {
               localPath: 0,
             },
           },
-        ]).toArray((err, result) => {
-          if (err) {
-            console.log(err);
-            return;
-          }
-          res.status(200).json(result);
-        });
+        ]).toArray();
+        res.status(200).json(files);
       }
     } catch (err) {
       console.log(err);
@@ -309,8 +311,9 @@ export default class FilesController {
         });
         // get correct mime type for file
         const fileMimeType = mime.contentType(file.name)
+        console.log(fileMimeType);
         if (fileMimeType) {
-            fs.readFile(file.localPath, (err,fileData) => {
+            fs.readFile(file.localPath, 'utf-8', (err,fileData) => {
                 if (err) {console.log(err)}
                 res.status(200).json(fileData);
             });
